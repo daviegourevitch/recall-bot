@@ -49,14 +49,19 @@ export class RecallBot {
     }
 
     try {
+      // Check if this message has already been processed
+      if (this.database.hasMessageBeenProcessed(message.id)) {
+        return; // Skip duplicate messages
+      }
+
       // Check if this is a recall message
       if (isRecallMessage(message.content)) {
         // Extract and process the recall reason
         const rawReason = parseRecallReason(message.content);
         const titleCaseReason = toTitleCase(rawReason);
         
-        // Add to database
-        this.database.addRecallReason(titleCaseReason);
+        // Add to database with message ID
+        this.database.addRecallReason(titleCaseReason, message.id);
         
         // Post updated statistics
         await this.postRecallStats(message.channel as TextChannel);
