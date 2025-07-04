@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits, TextChannel, Message } from 'discord.js';
+import { Client, Events, GatewayIntentBits, TextChannel, ThreadChannel, Message } from 'discord.js';
 import { RecallDatabase } from './recallDatabase';
 import { isRecallMessage, parseRecallReason } from '../utils/messageParser';
 import { toTitleCase } from '../utils/textUtils';
@@ -43,7 +43,7 @@ export class RecallBot {
    * @param message - The Discord message
    */
   private async handleMessage(message: Message): Promise<void> {
-    // Ignore bot messages and messages from other channels
+    // Ignore bot messages and messages from other channels/threads
     if (message.author.bot || message.channelId !== this.targetChannelId) {
       return;
     }
@@ -64,7 +64,7 @@ export class RecallBot {
         this.database.addRecallReason(titleCaseReason, message.id);
         
         // Post updated statistics
-        await this.postRecallStats(message.channel as TextChannel);
+        await this.postRecallStats(message.channel as TextChannel | ThreadChannel);
       }
     } catch (error) {
       console.error('Error processing message:', error);
@@ -72,10 +72,10 @@ export class RecallBot {
   }
 
   /**
-   * Posts recall statistics to the channel
-   * @param channel - The Discord text channel to post to
+   * Posts recall statistics to the channel or thread
+   * @param channel - The Discord text channel or thread to post to
    */
-  private async postRecallStats(channel: TextChannel): Promise<void> {
+  private async postRecallStats(channel: TextChannel | ThreadChannel): Promise<void> {
     try {
       const stats = this.database.getRecallStats();
       const formattedStats = formatRecallStats(stats);

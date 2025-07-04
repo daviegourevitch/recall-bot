@@ -4,12 +4,13 @@ A Discord bot that tracks recall notices and provides statistics on recall reaso
 
 ## Features
 
-- Monitors a specified Discord channel for recall messages
+- Monitors a specified Discord channel or thread for recall messages
 - Automatically detects messages containing "recalled due to"
 - Extracts and normalizes recall reasons (converts to title case)
 - Maintains a local database of recall reasons and their frequencies
 - Posts formatted statistics after each new recall is detected
 - Sorts recall reasons by frequency (most common first)
+- Prevents duplicate processing of the same message
 
 ## Setup
 
@@ -18,7 +19,7 @@ A Discord bot that tracks recall notices and provides statistics on recall reaso
 - Node.js (v16 or higher)
 - Yarn package manager
 - Discord Bot Token
-- Target Discord Channel ID
+- Target Discord Channel or Thread ID
 
 ### Installation
 
@@ -38,10 +39,10 @@ yarn install
 cp env.example .env
 ```
 
-4. Edit `.env` file with your Discord bot token and target channel ID:
-```bash
+4. Edit `.env` file with your Discord bot token and target channel/thread ID:
+```
 DISCORD_TOKEN=your_discord_bot_token_here
-TARGET_CHANNEL_ID=your_target_channel_id_here
+TARGET_CHANNEL_ID=your_target_channel_or_thread_id_here
 ```
 
 ### Discord Bot Setup
@@ -54,7 +55,15 @@ TARGET_CHANNEL_ID=your_target_channel_id_here
    - Read Messages/View Channels
    - Send Messages
    - Read Message History
+   - Use Slash Commands (if using threads)
 6. Invite the bot to your server with the appropriate permissions
+
+### Thread Support
+
+The bot supports both regular Discord channels and threads. When using a thread:
+- The bot will monitor all messages in the thread
+- Statistics will be posted in the same thread
+- The bot can read and respond to messages in threads
 
 ## Usage
 
@@ -127,6 +136,7 @@ The project includes comprehensive unit tests for all major functionality:
 - Text case conversion
 - Database operations
 - Message formatting
+- Duplicate message prevention
 
 Run tests with:
 ```bash
@@ -138,7 +148,7 @@ yarn test
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `DISCORD_TOKEN` | Discord bot token | Yes |
-| `TARGET_CHANNEL_ID` | ID of the channel to monitor | Yes |
+| `TARGET_CHANNEL_ID` | ID of the channel or thread to monitor | Yes |
 
 ## License
 
