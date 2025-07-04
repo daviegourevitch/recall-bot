@@ -1,3 +1,7 @@
+import { Low } from 'lowdb';
+import { join } from 'path';
+import { JSONFile } from 'lowdb/node';
+
 /**
  * Interface for recall statistics
  */
@@ -6,30 +10,47 @@ export interface RecallStat {
   count: number;
 }
 
+interface RecallDatabaseSchema {
+  recallCounts: Record<string, number>;
+  processedMessageIds: string[];
+}
+
 /**
  * Service for managing recall reasons and their counts
  */
 export class RecallDatabase {
-  private recallCounts: Map<string, number> = new Map();
-  private processedMessageIds: Set<string> = new Set();
+  private db: Low<RecallDatabaseSchema>;
+  private dbFilePath: string;
+
+  constructor(dbFilePath = join(process.cwd(), 'recallDatabase.json')) {
+    this.dbFilePath = dbFilePath;
+    const adapter = new JSONFile<RecallDatabaseSchema>(this.dbFilePath);
+    this.db = new Low(adapter, { recallCounts: {}, processedMessageIds: [] });
+  }
+
+  /**
+   * Loads the database from file. Call this before using the database.
+   */
+  async load(): Promise<void> {
+    await this.db.read();
+    // Initialize if file is empty
+    this.db.data ||= { recallCounts: {}, processedMessageIds: [] };
+    await this.db.write();
+  }
 
   /**
    * Adds a recall reason to the database or increments its count
    * @param reason - The recall reason to add
    * @param messageId - The ID of the message containing the recall
    */
-  addRecallReason(reason: string, messageId: string): void {
-    // Check if this message has already been processed
-    if (this.processedMessageIds.has(messageId)) {
-      return; // Skip duplicate messages
+  async addRecallReason(reason: string, messageId: string): Promise<void> {
+    await this.load();
+    if (this.db.data && this.db.data.processedMessageIds.includes(messageId)) {
+      return;
     }
-
-    // Add message ID to processed set
-    this.processedMessageIds.add(messageId);
-
-    // Increment recall count
-    const currentCount = this.recallCounts.get(reason) || 0;
-    this.recallCounts.set(reason, currentCount + 1);
+    this.db.data.processedMessageIds.push(messageId);
+    this.db.data.recallCounts[reason] = (this.db.data.recallCounts[reason] || 0) + 1;
+    await this.db.write();
   }
 
   /**
@@ -37,22 +58,18 @@ export class RecallDatabase {
    * @param messageId - The ID of the message to check
    * @returns True if the message has been processed
    */
-  hasMessageBeenProcessed(messageId: string): boolean {
-    return this.processedMessageIds.has(messageId);
+  async hasMessageBeenProcessed(messageId: string): Promise<boolean> {
+    await this.load();
+    return this.db.data && this.db.data.processedMessageIds.includes(messageId);
   }
 
   /**
    * Gets recall statistics sorted by count in descending order
    * @returns Array of recall statistics
    */
-  getRecallStats(): RecallStat[] {
-    const stats: RecallStat[] = [];
-    
-    for (const [reason, count] of this.recallCounts.entries()) {
-      stats.push({ reason, count });
-    }
-    
-    // Sort by count in descending order
+  async getRecallStats(): Promise<RecallStat[]> {
+    await this.load();
+    const stats = Object.entries(this.db.data.recallCounts).map(([reason, count]) => ({ reason, count: Number(count) }));
     return stats.sort((a, b) => b.count - a.count);
   }
 
@@ -60,27 +77,26 @@ export class RecallDatabase {
    * Gets the set of processed message IDs
    * @returns Set of processed message IDs
    */
-  getProcessedMessageIds(): Set<string> {
-    return new Set(this.processedMessageIds);
+  async getProcessedMessageIds(): Promise<Set<string>> {
+    await this.load();
+    return new Set(this.db.data.processedMessageIds);
   }
 
   /**
    * Clears all recall data
    */
-  clearDatabase(): void {
-    this.recallCounts.clear();
-    this.processedMessageIds.clear();
+  async clearDatabase(): Promise<void> {
+    await this.load();
+    this.db.data = { recallCounts: {}, processedMessageIds: [] };
+    await this.db.write();
   }
 
   /**
    * Gets the total number of recalls
    * @returns Total count of all recalls
    */
-  getTotalRecalls(): number {
-    let total = 0;
-    for (const count of this.recallCounts.values()) {
-      total += count;
-    }
-    return total;
+  async getTotalRecalls(): Promise<number> {
+    await this.load();
+    return (Object.values(this.db.data.recallCounts) as number[]).reduce((acc, count) => acc + count, 0);
   }
 } 

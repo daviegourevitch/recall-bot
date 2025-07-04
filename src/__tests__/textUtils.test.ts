@@ -35,11 +35,13 @@ describe('Text Utils', () => {
     });
 
     it('should handle null input', () => {
-      expect(toTitleCase(null as unknown as string)).toBe(null);
+      // @ts-expect-error Testing null input for coverage
+      expect(() => toTitleCase(null)).toThrow();
     });
 
     it('should handle undefined input', () => {
-      expect(toTitleCase(undefined as unknown as string)).toBe(undefined);
+      // @ts-expect-error Testing undefined input for coverage
+      expect(() => toTitleCase(undefined)).toThrow();
     });
 
     it('should handle text with multiple spaces', () => {

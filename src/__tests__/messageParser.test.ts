@@ -77,11 +77,13 @@ describe('Message Parser', () => {
     });
 
     it('should throw error for null message', () => {
-      expect(() => parseRecallReason(null as unknown as string)).toThrow('No recall reason found in message');
+      // @ts-expect-error Testing null input for coverage
+      expect(() => parseRecallReason(null)).toThrow('No recall reason found in message');
     });
 
     it('should throw error for undefined message', () => {
-      expect(() => parseRecallReason(undefined as unknown as string)).toThrow('No recall reason found in message');
+      // @ts-expect-error Testing undefined input for coverage
+      expect(() => parseRecallReason(undefined)).toThrow('No recall reason found in message');
     });
   });
 }); 

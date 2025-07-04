@@ -36,6 +36,11 @@ export class RecallBot {
     });
     this.client.on(Events.InteractionCreate, this.handleInteraction.bind(this));
     this.client.on(Events.MessageCreate, this.handleMessage.bind(this));
+    
+    // Add debug logging if DEBUG is enabled
+    if (process.env.DEBUG === 'true') {
+      console.log('🔍 Debug mode enabled');
+    }
   }
 
   /**
@@ -94,15 +99,30 @@ export class RecallBot {
    */
   private async handleTrackCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     try {
-      const channel = interaction.options.getChannel('channel') as TextChannel | ThreadChannel | null;
-      const targetChannel = channel || (interaction.channel as TextChannel | ThreadChannel | null);
+      const channel = interaction.options.getChannel('channel');
+      let targetChannel = null;
+      function isTextOrThreadChannel(obj: unknown): obj is TextChannel | ThreadChannel {
+        return (
+          obj != null &&
+          (obj instanceof TextChannel || obj instanceof ThreadChannel) &&
+          'messages' in obj &&
+          typeof (obj as TextChannel | ThreadChannel).messages.fetch === 'function'
+        );
+      }
+      if (isTextOrThreadChannel(channel)) {
+        targetChannel = channel;
+      } else if (interaction.channel instanceof ThreadChannel) {
+        targetChannel = interaction.channel;
+      } else if (isTextOrThreadChannel(interaction.channel)) {
+        targetChannel = interaction.channel;
+      }
       if (!targetChannel) {
         await interaction.reply({ content: '❌ Unable to determine the channel to track.', ephemeral: true });
         return;
       }
       this.trackedChannelId = targetChannel.id;
       await interaction.reply({
-        content: `Now tracking channel: ${targetChannel.toString()}`,
+        content: `Now tracking channel: ${typeof targetChannel.toString === 'function' ? targetChannel.toString() : '#unknown'}`,
         ephemeral: true,
       });
     } catch (error) {
@@ -120,8 +140,24 @@ export class RecallBot {
    */
   private async handlePopulateCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     try {
-      const channel = interaction.options.getChannel('channel') as TextChannel | ThreadChannel | null;
-      const targetChannel = channel || (interaction.channel as TextChannel | ThreadChannel | null);
+      // Get the channel option, or fallback to the current thread/channel
+      const channel = interaction.options.getChannel('channel');
+      let targetChannel = null;
+      function isTextOrThreadChannel(obj: unknown): obj is TextChannel | ThreadChannel {
+        return (
+          obj != null &&
+          (obj instanceof TextChannel || obj instanceof ThreadChannel) &&
+          'messages' in obj &&
+          typeof (obj as TextChannel | ThreadChannel).messages.fetch === 'function'
+        );
+      }
+      if (isTextOrThreadChannel(channel)) {
+        targetChannel = channel;
+      } else if (interaction.channel instanceof ThreadChannel) {
+        targetChannel = interaction.channel;
+      } else if (isTextOrThreadChannel(interaction.channel)) {
+        targetChannel = interaction.channel;
+      }
       const limit = interaction.options.getInteger('limit') || 100;
 
       if (!targetChannel) {
@@ -131,7 +167,7 @@ export class RecallBot {
 
       // Send initial confirmation
       await interaction.reply({
-        content: `🔄 Populating database with messages from ${targetChannel.toString()}...`,
+        content: `🔄 Populating database with messages from ${typeof targetChannel.toString === 'function' ? targetChannel.toString() : '#unknown'}...`,
         ephemeral: true,
       });
 
@@ -147,7 +183,7 @@ export class RecallBot {
         if (message.author.bot) continue;
 
         // Check if this message has already been processed
-        if (this.database.hasMessageBeenProcessed(message.id)) {
+        if (await this.database.hasMessageBeenProcessed(message.id)) {
           continue; // Skip duplicate messages
         }
 
@@ -193,12 +229,18 @@ export class RecallBot {
     if (!this.trackedChannelId || message.channelId !== this.trackedChannelId) return;
     
     // Check if this message has already been processed
-    if (this.database.hasMessageBeenProcessed(message.id)) {
+    if (await this.database.hasMessageBeenProcessed(message.id)) {
+      if (process.env.DEBUG === 'true') {
+        console.log(`🔍 Skipping already processed message: ${message.id}`);
+      }
       return; // Skip duplicate messages
     }
     
     // Check if this is a recall message
     if (isRecallMessage(message.content)) {
+      if (process.env.DEBUG === 'true') {
+        console.log(`🔍 Processing recall message: ${message.id}`);
+      }
       try {
         // Extract and process the recall reason
         const rawReason = parseRecallReason(message.content);
@@ -206,7 +248,12 @@ export class RecallBot {
         // Add to database with message ID
         this.database.addRecallReason(titleCaseReason, message.id);
         // Post updated statistics
-        await this.postRecallStats(message.channel as TextChannel | ThreadChannel);
+        if (typeof message.channel === 'object' && message.channel !== null && typeof (message.channel as { send?: unknown }).send === 'function') {
+          await this.postRecallStats(message.channel as { send: (msg: string) => Promise<unknown> });
+        }
+        if (process.env.DEBUG === 'true') {
+          console.log(`✅ Successfully processed recall: ${titleCaseReason}`);
+        }
       } catch (error) {
         console.error('Error processing recall message:', error);
         // Don't mark message as processed if we failed to parse the recall reason
@@ -218,9 +265,9 @@ export class RecallBot {
    * Posts recall statistics to the channel or thread
    * @param channel - The Discord text channel or thread to post to
    */
-  private async postRecallStats(channel: TextChannel | ThreadChannel): Promise<void> {
+  private async postRecallStats(channel: { send: (msg: string) => Promise<unknown> }): Promise<void> {
     try {
-      const stats = this.database.getRecallStats();
+      const stats = await this.database.getRecallStats();
       const formattedStats = formatRecallStats(stats);
       await channel.send(formattedStats);
     } catch (error) {

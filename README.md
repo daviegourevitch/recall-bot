@@ -34,14 +34,19 @@ cd recall-bot
 yarn install
 ```
 
-3. Create environment file:
+3. Set up environment variables:
 ```bash
+# Option 1: Use the setup script (recommended)
+npm run setup
+
+# Option 2: Manual setup
 cp env.example .env
 ```
 
 4. Edit `.env` file with your Discord bot token:
 ```
 DISCORD_TOKEN=your_discord_bot_token_here
+DEBUG=false  # Set to true for debug logging
 ```
 
 ### Discord Bot Setup
@@ -170,9 +175,10 @@ yarn test
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DISCORD_TOKEN` | Discord bot token | Yes |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `DISCORD_TOKEN` | Discord bot token | Yes | - |
+| `DEBUG` | Enable debug logging | No | false |
 
 ## License
 

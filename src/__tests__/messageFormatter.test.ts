@@ -55,12 +55,14 @@ describe('Message Formatter', () => {
     });
 
     it('should handle null input gracefully', () => {
-      const formatted = formatRecallStats(null as unknown as Array<{ reason: string; count: number }>);
+      // @ts-expect-error Testing null input for coverage
+      const formatted = formatRecallStats(null);
       expect(formatted).toBe('Top recall reasons:\nNo recalls recorded yet.');
     });
 
     it('should handle undefined input gracefully', () => {
-      const formatted = formatRecallStats(undefined as unknown as Array<{ reason: string; count: number }>);
+      // @ts-expect-error Testing undefined input for coverage
+      const formatted = formatRecallStats(undefined);
       expect(formatted).toBe('Top recall reasons:\nNo recalls recorded yet.');
     });
 

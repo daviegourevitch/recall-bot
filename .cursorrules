@@ -1,0 +1,2 @@
+Never cast typescript types unless absolutely necessary.
+Never use any as a typescript type.
