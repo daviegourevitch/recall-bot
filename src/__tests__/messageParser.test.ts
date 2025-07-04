@@ -57,5 +57,31 @@ describe('Message Parser', () => {
       const reason = parseRecallReason(message);
       expect(reason).toBe('contamination');
     });
+
+    it('should handle messages with extra whitespace', () => {
+      const message = '📰 | Product recalled due to   Listeria monocytogenes   ';
+      const reason = parseRecallReason(message);
+      expect(reason).toBe('Listeria monocytogenes');
+    });
+
+    it('should handle messages with newlines', () => {
+      const message = '📰 | Product recalled due to\nListeria monocytogenes';
+      const reason = parseRecallReason(message);
+      expect(reason).toBe('Listeria monocytogenes');
+    });
+
+    it('should handle messages with multiple "recalled due to" phrases', () => {
+      const message = '📰 | Product recalled due to Listeria, but also recalled due to Histamine';
+      const reason = parseRecallReason(message);
+      expect(reason).toBe('Listeria, but also recalled due to Histamine');
+    });
+
+    it('should throw error for null message', () => {
+      expect(() => parseRecallReason(null as unknown as string)).toThrow('No recall reason found in message');
+    });
+
+    it('should throw error for undefined message', () => {
+      expect(() => parseRecallReason(undefined as unknown as string)).toThrow('No recall reason found in message');
+    });
   });
 }); 

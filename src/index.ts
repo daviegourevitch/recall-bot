@@ -5,7 +5,7 @@ import { RecallBot } from './services/recallBot';
 dotenv.config();
 
 // Validate required environment variables
-const requiredEnvVars = ['DISCORD_TOKEN', 'TARGET_CHANNEL_ID'];
+const requiredEnvVars = ['DISCORD_TOKEN'];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     console.error(`Missing required environment variable: ${envVar}`);
@@ -14,10 +14,7 @@ for (const envVar of requiredEnvVars) {
 }
 
 // Create and start the bot
-const bot = new RecallBot(
-  process.env.DISCORD_TOKEN!,
-  process.env.TARGET_CHANNEL_ID!
-);
+const bot = new RecallBot(process.env.DISCORD_TOKEN!);
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {

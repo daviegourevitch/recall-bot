@@ -4,7 +4,7 @@
  * @returns Formatted message string
  */
 export function formatRecallStats(stats: Array<{ reason: string; count: number }>): string {
-  if (stats.length === 0) {
+  if (!stats || stats.length === 0) {
     return 'Top recall reasons:\nNo recalls recorded yet.';
   }
   

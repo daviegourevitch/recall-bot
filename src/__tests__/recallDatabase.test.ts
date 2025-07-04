@@ -126,4 +126,28 @@ describe('Recall Database', () => {
       expect(messageIds).toEqual(new Set(['123456789', '987654321']));
     });
   });
+
+  describe('getTotalRecalls', () => {
+    it('should return 0 when no recalls added', () => {
+      expect(database.getTotalRecalls()).toBe(0);
+    });
+
+    it('should return correct total for single recall', () => {
+      database.addRecallReason('Listeria Monocytogenes', '123456789');
+      expect(database.getTotalRecalls()).toBe(1);
+    });
+
+    it('should return correct total for multiple recalls', () => {
+      database.addRecallReason('Listeria Monocytogenes', '123456789');
+      database.addRecallReason('Histamine', '987654321');
+      database.addRecallReason('Listeria Monocytogenes', '111222333');
+      expect(database.getTotalRecalls()).toBe(3);
+    });
+
+    it('should not count duplicate message IDs', () => {
+      database.addRecallReason('Listeria Monocytogenes', '123456789');
+      database.addRecallReason('Histamine', '123456789'); // Same message ID
+      expect(database.getTotalRecalls()).toBe(1);
+    });
+  });
 }); 

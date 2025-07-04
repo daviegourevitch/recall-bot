@@ -53,5 +53,27 @@ describe('Message Formatter', () => {
 2. Listeria Monocytogenes (50)`;
       expect(formatted).toBe(expected);
     });
+
+    it('should handle null input gracefully', () => {
+      const formatted = formatRecallStats(null as unknown as Array<{ reason: string; count: number }>);
+      expect(formatted).toBe('Top recall reasons:\nNo recalls recorded yet.');
+    });
+
+    it('should handle undefined input gracefully', () => {
+      const formatted = formatRecallStats(undefined as unknown as Array<{ reason: string; count: number }>);
+      expect(formatted).toBe('Top recall reasons:\nNo recalls recorded yet.');
+    });
+
+    it('should handle stats with zero counts', () => {
+      const stats = [
+        { reason: 'Histamine', count: 0 },
+        { reason: 'Listeria Monocytogenes', count: 1 }
+      ];
+      const formatted = formatRecallStats(stats);
+      const expected = `Top recall reasons:
+1. Histamine (0)
+2. Listeria Monocytogenes (1)`;
+      expect(formatted).toBe(expected);
+    });
   });
 }); 
